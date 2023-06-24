@@ -1,0 +1,142 @@
+
+
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>Authentication Example</title>
+    <style>
+         body{
+        background-color: black;
+    }
+    h1{
+        color: white;
+    }
+      .error {
+        color: red;
+      }
+      .success {
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Signup</h1>
+      <div id="signup-page">
+        <h2>Signup</h2>
+        <div id="signup-message" class="success"></div>
+        <div id="signup-error" class="error"></div>
+        <input type="text" id="fullname" placeholder="Full Name" required /><br><br>
+        <input type="email" id="email" placeholder="Email" required /><br><br>
+        <input type="password" id="password" placeholder="Password" required /><br><br>
+        <input type="password" id="confirm-password" placeholder="Confirm Password" required /><br><br>
+        <button id="signup-btn">Signup</button>
+      </div>
+  
+      <div id="profile-page" style="display: none;">
+        <h2>Profile</h2>
+        <div id="profile-details"></div>
+        <button id="logout-btn">Logout</button>
+      </div>
+    </div>
+  
+    <script src="https://unpkg.com/page/page.js"></script>
+    <script>
+      // Signup page
+      const signupPage = document.getElementById('signup-page');
+      const signupMessage = document.getElementById('signup-message');
+      const signupError = document.getElementById('signup-error');
+      const signupButton = document.getElementById('signup-btn');
+  
+      signupButton.addEventListener('click', () => {
+        const fullName = document.getElementById('fullname').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const accessToken = generateAccessToken();
+  
+        if (fullName && email && password && confirmPassword) {
+          if (password === confirmPassword) {
+            const user = { fullName, email, password, accessToken };
+            saveUserState(user);
+            signupMessage.textContent = 'Signup successful. Redirecting to profile...';
+            signupError.textContent = '';
+            setTimeout(() => {
+              page('/profile');
+            }, 2000);
+          } else {
+            signupError.textContent = 'Passwords do not match.';
+            signupMessage.textContent = '';
+          }
+        } else {
+          signupError.textContent = 'Please enter all fields.';
+          signupMessage.textContent = '';
+        }
+      });
+  
+      // Profile page
+      page('/profile', () => {
+        const user = getUserState();
+        if (!user || !user.accessToken) {
+          page.redirect('/');
+        } else {
+          displayUserProfile(user);
+          signupPage.style.display = 'none';
+          profilePage.style.display = 'block';
+        }
+      });
+  
+      // Signup page
+      page('/', () => {
+        const user = getUserState();
+        if (user && user.accessToken) {
+          page.redirect('/profile');
+        } else {
+          signupPage.style.display = 'block';
+          profilePage.style.display = 'none';
+        }
+      });
+  
+      // Initialize page.js
+      page();
+  
+      // Utility functions
+      function generateAccessToken() {
+        // Generate a random 16-byte string for the access token
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let token = '';
+        for (let i = 0; i < 16; i++) {
+          token += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return token;
+      }
+  
+      function saveUserState(user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+  
+      function getUserState() {
+        const user = localStorage.getItem('user');
+        return user ? JSON.parse(user) : null;
+      }
+  
+      function displayUserProfile(user) {
+        document.getElementById('profile-details').innerHTML = `
+          <p><strong>Full Name:</strong> ${user.fullName}</p>
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Access Token:</strong> ${user.accessToken}</p>
+        `;
+        const logoutButton = document.getElementById('logout-btn');
+        logoutButton.addEventListener('click', () => {
+          clearUserState();
+          page.redirect('/');
+        });
+      }
+  
+      function clearUserState() {
+        localStorage.removeItem('user');
+      }
+    </script>
+  </body>
+  </html>
+  
